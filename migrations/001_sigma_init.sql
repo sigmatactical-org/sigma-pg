@@ -1,0 +1,35 @@
+CREATE SCHEMA IF NOT EXISTS catalog;
+CREATE SCHEMA IF NOT EXISTS store;
+CREATE SCHEMA IF NOT EXISTS cart;
+CREATE SCHEMA IF NOT EXISTS contact;
+CREATE SCHEMA IF NOT EXISTS accounting;
+
+CREATE TABLE IF NOT EXISTS catalog.snapshot (
+    id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS store.snapshot (
+    id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cart.snapshot (
+    id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS contact.snapshot (
+    id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS accounting.snapshot (
+    id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
