@@ -1,0 +1,4 @@
+# RUSTSEC-2023-0071: Marvin timing side-channel in the `rsa` crate (no patched release on crates.io).
+# Transitive via sqlx-postgres; no RSA crypto in this crate.
+[advisories]
+ignore = ["RUSTSEC-2023-0071"]
