@@ -38,7 +38,9 @@ Embedded migrations create one JSONB snapshot table per service schema:
 
 ## Local Postgres
 
-Clone this repo and start the bundled compose file (creates `sigma` and `keycloak` databases):
+**Single source of truth** for local Sigma PostgreSQL: this repo's `docker-compose.deps.yml` and `init/` scripts. Other repos include or invoke this file — do not duplicate Postgres compose elsewhere.
+
+Clone and start (creates `sigma` and `keycloak` databases):
 
 ```bash
 git clone https://github.com/sigmatactical-org/sigma-pg.git
@@ -46,4 +48,12 @@ cd sigma-pg
 docker compose -f docker-compose.deps.yml up -d
 ```
 
-Service crates in other repos can also point at `postgres://sigma:sigma@127.0.0.1:5432/sigma` once this container is running.
+### Used by other repos
+
+| Consumer | How |
+|----------|-----|
+| [identity](https://github.com/sigmatactical-org/identity) | `scripts/dev-stack.sh` starts this compose; devcontainer `include`s it |
+| commerce / accounting | `DATABASE_URL=postgres://sigma:sigma@127.0.0.1:5432/sigma` after this is up |
+| conformance harness | `identity/conformance/docker-compose.yml` includes this file |
+
+Set `SIGMA_PG_DIR` if the checkout is not at `../sigma-pg` relative to identity.
