@@ -54,6 +54,6 @@ docker compose -f docker-compose.deps.yml up -d
 |----------|-----|
 | [identity](https://github.com/sigmatactical-org/identity) | `scripts/dev-stack.sh` starts this compose; devcontainer `include`s it |
 | commerce / accounting | `DATABASE_URL=postgres://sigma:sigma@127.0.0.1:5432/sigma` after this is up |
-| conformance harness | `identity/conformance/docker-compose.yml` includes this file |
+| conformance harness | `conformance-stack.sh` starts sigma-pg compose; identity uses `host.docker.internal:5432` |
 
 Set `SIGMA_PG_DIR` if the checkout is not at `../sigma-pg` relative to identity.
