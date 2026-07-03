@@ -43,7 +43,7 @@ pub async fn migrate(pool: &PgPool) -> Result<()> {
 }
 
 /// Load a JSON document snapshot from `{schema}.snapshot`.
-pub async fn load_snapshot<T: DeserializeOwned>(pool: &PgPool, schema: &str) -> Result<T> {
+pub async fn load_snapshot<T: DeserializeOwned + Default>(pool: &PgPool, schema: &str) -> Result<T> {
     let query = format!("SELECT data FROM {schema}.snapshot WHERE id = 1");
     let row: Option<serde_json::Value> = sqlx::query_scalar(&query)
         .fetch_optional(pool)
@@ -52,7 +52,7 @@ pub async fn load_snapshot<T: DeserializeOwned>(pool: &PgPool, schema: &str) -> 
 
     match row {
         Some(value) => serde_json::from_value(value).context("deserialize snapshot"),
-        None => serde_json::from_value(serde_json::json!({})).context("default empty snapshot"),
+        None => Ok(T::default()),
     }
 }
 
