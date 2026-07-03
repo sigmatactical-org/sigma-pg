@@ -3,6 +3,7 @@
 services:
   postgres:
     image: postgres:16-bookworm
+    container_name: sigma-pg-postgres
     ports:
       - "127.0.0.1:5432:5432"
     environment:
@@ -17,6 +18,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - sigma-dev
 
 volumes:
   postgres-data:
+
+networks:
+  sigma-dev:
+    external: true
+    name: sigma-dev
