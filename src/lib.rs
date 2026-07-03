@@ -3,7 +3,7 @@
 use std::env;
 
 use anyhow::{Context, Result};
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use tracing::debug;
 
@@ -43,7 +43,10 @@ pub async fn migrate(pool: &PgPool) -> Result<()> {
 }
 
 /// Load a JSON document snapshot from `{schema}.snapshot`.
-pub async fn load_snapshot<T: DeserializeOwned + Default>(pool: &PgPool, schema: &str) -> Result<T> {
+pub async fn load_snapshot<T: DeserializeOwned + Default>(
+    pool: &PgPool,
+    schema: &str,
+) -> Result<T> {
     let query = format!("SELECT data FROM {schema}.snapshot WHERE id = 1");
     let row: Option<serde_json::Value> = sqlx::query_scalar(&query)
         .fetch_optional(pool)
@@ -57,7 +60,11 @@ pub async fn load_snapshot<T: DeserializeOwned + Default>(pool: &PgPool, schema:
 }
 
 /// Persist a JSON document snapshot to `{schema}.snapshot`.
-pub async fn save_snapshot<T: Serialize + Sync>(pool: &PgPool, schema: &str, data: &T) -> Result<()> {
+pub async fn save_snapshot<T: Serialize + Sync>(
+    pool: &PgPool,
+    schema: &str,
+    data: &T,
+) -> Result<()> {
     let value = serde_json::to_value(data).context("serialize snapshot")?;
     let query = format!(
         "INSERT INTO {schema}.snapshot (id, data, updated_at) VALUES (1, $1, now()) \
