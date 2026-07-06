@@ -40,7 +40,37 @@ Embedded migrations create one JSONB document table per service schema:
 - `"order".document`
 - `identity` — session tables (created by identity via tower-sessions)
 
-Local dev connection URLs (password `sigma`):
+## Local development (kind)
+
+PostgreSQL runs **in the kind cluster** ([platform](https://github.com/sigmatactical-org/platform) `services/postgres`). There is no docker-compose for Postgres in this repo.
+
+1. Deploy the dev stack (once):
+
+   ```bash
+   cd platform
+   kind create cluster --name sigma-platform   # if needed
+   istioctl install --set profile=demo -y
+   kubectl apply -k mesh/base
+   ./scripts/build-and-load.sh
+   kubectl apply -k environments/dev
+   ./scripts/configure-kind-ingress.sh
+   ```
+
+2. Port-forward Postgres to the host for `cargo run` / tests:
+
+   ```bash
+   ./scripts/postgres-dev.sh port-forward
+   # or in the background:
+   ./scripts/postgres-dev.sh port-forward-bg
+   ```
+
+3. Apply schema migrations (once per database, as `sigma`):
+
+   ```bash
+   ./scripts/postgres-dev.sh migrate
+   ```
+
+Host connection URLs (password `sigma`, with port-forward on `127.0.0.1:5432`):
 
 | Service | `DATABASE_URL` |
 |---------|----------------|
@@ -53,34 +83,16 @@ Local dev connection URLs (password `sigma`):
 | identity | `postgres://identity:sigma@127.0.0.1:5432/sigma` |
 | migrations | `postgres://sigma:sigma@127.0.0.1:5432/sigma` |
 
-`init/01-keycloak-db.sql` is for Docker Postgres init (creates the `keycloak` database).
+In-cluster URLs use `postgres.sigma-dev.svc.cluster.local:5432` (see platform service configmaps).
 
-## Local Postgres
+`init/01-keycloak-db.sql` is mirrored in platform `services/postgres` init (creates the `keycloak` database).
 
-**Single source of truth** for local Sigma PostgreSQL: this repo's `docker-compose.deps.yml` and `init/` scripts. Other repos include or invoke this file — do not duplicate Postgres compose elsewhere.
-
-Clone and start (creates `sigma` and `keycloak` databases):
-
-```bash
-git clone https://github.com/sigmatactical-org/sigma-pg.git
-cd sigma-pg
-docker compose -f docker-compose.deps.yml up -d
-```
-
-Apply schema migrations once (connect as `sigma`, or any user with `SIGMA_PG_MIGRATE=1`):
-
-```bash
-DATABASE_URL=postgres://sigma:sigma@127.0.0.1:5432/sigma cargo test -p sigma-pg
-```
-
-The first connection as `sigma` applies pending migrations automatically.
-
-### Used by other repos
+## Used by other repos
 
 | Consumer | How |
 |----------|-----|
-| [identity](https://github.com/sigmatactical-org/identity) | `scripts/dev-stack.sh` starts this compose; devcontainer `include`s it |
-| store / catalog / cart / contact / accounting / order | Per-service `DATABASE_URL` after migrations have run |
-| conformance harness | `conformance-stack.sh` starts sigma-pg compose; identity uses `host.docker.internal:5432` |
+| platform | StatefulSet Postgres + `scripts/postgres-dev.sh` for host port-forward |
+| identity | kind Postgres via port-forward; Keycloak uses in-cluster Postgres |
+| store / catalog / cart / contact / accounting / order | Per-service `DATABASE_URL` in kind or via port-forward |
 
-Set `SIGMA_PG_DIR` if the checkout is not at `../sigma-pg` relative to identity.
+Set `SIGMA_PG_DIR` to the sigma-pg checkout when running `postgres-dev.sh migrate` from a non-standard path.
