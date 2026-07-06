@@ -1,7 +1,0 @@
-CREATE SCHEMA IF NOT EXISTS "order";
-
-CREATE TABLE IF NOT EXISTS "order".snapshot (
-    id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);

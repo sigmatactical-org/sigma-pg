@@ -1,9 +1,8 @@
-//! Shared PostgreSQL helpers for Sigma web services.
+//! Shared PostgreSQL connection helpers for Sigma web services.
 
 use std::env;
 
 use anyhow::{Context, Result};
-use serde::{Serialize, de::DeserializeOwned};
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use tracing::debug;
 
@@ -57,53 +56,13 @@ pub fn should_auto_migrate(database_url: &str) -> bool {
     connection_role(database_url) == Some("sigma")
 }
 
-/// Apply embedded service document migrations.
+/// Apply embedded schema migrations.
 pub async fn migrate(pool: &PgPool) -> Result<()> {
     sqlx::migrate!("./migrations")
         .run(pool)
         .await
         .context("run sigma-pg migrations")?;
     Ok(())
-}
-
-/// Load a JSON document from `{schema}.document`.
-pub async fn load_document<T: DeserializeOwned + Default>(
-    pool: &PgPool,
-    schema: &str,
-) -> Result<T> {
-    let table = qualified_table(schema, "document");
-    let query = format!("SELECT data FROM {table} WHERE id = 1");
-    let row: Option<serde_json::Value> = sqlx::query_scalar(&query)
-        .fetch_optional(pool)
-        .await
-        .with_context(|| format!("load {schema} document"))?;
-
-    match row {
-        Some(value) => serde_json::from_value(value).context("deserialize document"),
-        None => Ok(T::default()),
-    }
-}
-
-/// Persist a JSON document to `{schema}.document`.
-pub async fn save_document<T: Serialize + Sync>(pool: &PgPool, schema: &str, data: &T) -> Result<()> {
-    let table = qualified_table(schema, "document");
-    let query = format!(
-        "INSERT INTO {table} (id, data, updated_at) VALUES (1, $1, now()) \
-         ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()"
-    );
-    let value = serde_json::to_value(data).context("serialize document")?;
-    sqlx::query(&query)
-        .bind(value)
-        .execute(pool)
-        .await
-        .with_context(|| format!("save {schema} document"))?;
-    Ok(())
-}
-
-/// Fully qualified `{schema}.{table}` for dynamic SQL (schema may include quotes).
-#[must_use]
-pub fn qualified_table(schema: &str, table: &str) -> String {
-    format!("{schema}.{table}")
 }
 
 /// Lightweight readiness probe for health endpoints.
@@ -132,13 +91,5 @@ mod tests {
         assert!(!should_auto_migrate(
             "postgres://catalog:sigma@127.0.0.1:5432/sigma"
         ));
-    }
-
-    #[test]
-    fn qualified_table_preserves_quoted_schema() {
-        assert_eq!(
-            qualified_table(r#""order""#, "document"),
-            r#""order".document"#
-        );
     }
 }

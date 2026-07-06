@@ -1,6 +1,6 @@
 # sigma-pg
 
-Shared PostgreSQL helpers for Sigma Tactical Group web services: connection pooling, schema migrations, and JSONB document storage per service schema.
+Shared PostgreSQL helpers for Sigma Tactical Group web services: connection pooling, schema migrations, and per-service relational schemas.
 
 Repository: https://github.com/sigmatactical-org/sigma-pg
 
@@ -14,9 +14,10 @@ sigma-pg = { git = "https://github.com/sigmatactical-org/sigma-pg.git" }
 
 ```rust
 let pool = sigma_pg::connect().await?;
-let data: MyDb = sigma_pg::load_document(&pool, "catalog").await?;
-sigma_pg::save_document(&pool, "catalog", &data).await?;
+sigma_pg::ping(&pool).await?;
 ```
+
+Each service owns SQL queries against its schema tables (for example `catalog.skus`, `cart.carts`). Embedded migrations create those tables and indexes.
 
 ## Configuration
 
@@ -30,47 +31,43 @@ Each service connects with its own database role and only has access to its sche
 
 ## Schemas
 
-Embedded migrations create one JSONB document table per service schema:
+| Schema | Tables |
+|--------|--------|
+| `catalog` | `skus`, `sku_components` |
+| `store` | `listings` |
+| `cart` | `carts`, `cart_lines` |
+| `"order"` | `orders`, `order_lines` |
+| `contact` | `contacts` |
+| `accounting` | `bills`, `bill_line_items`, `integrations` |
+| `identity` | session tables (tower-sessions) |
 
-- `catalog.document`
-- `store.document`
-- `cart.document`
-- `contact.document`
-- `accounting.document`
-- `"order".document`
-- `identity` — session tables (created by identity via tower-sessions)
+## Migrations
+
+`001_sigma_init.sql` — schemas, service roles, tables, indexes, grants.
+
+Passwords are in the private `platform` repo (`.env.dev-seed`). After Keycloak is up, run:
+
+```bash
+cd platform
+./scripts/seed-keycloak-dev-users.sh
+```
+
+See `platform/.env.dev-seed` for credentials.
 
 ## Local development (kind)
 
-PostgreSQL runs **in the kind cluster** ([platform](https://github.com/sigmatactical-org/platform) `services/postgres`). There is no docker-compose for Postgres in this repo.
+PostgreSQL runs **in the kind cluster** ([platform](https://github.com/sigmatactical-org/platform) `services/postgres`).
 
-1. Deploy the dev stack (once):
+1. Deploy the dev stack (once) — see platform README.
+2. Port-forward and migrate:
 
    ```bash
    cd platform
-   kind create cluster --name sigma-platform   # if needed
-   istioctl install --set profile=demo -y
-   kubectl apply -k mesh/base
-   ./scripts/build-and-load.sh
-   kubectl apply -k environments/dev
-   ./scripts/configure-kind-ingress.sh
-   ```
-
-2. Port-forward Postgres to the host for `cargo run` / tests:
-
-   ```bash
-   ./scripts/postgres-dev.sh port-forward
-   # or in the background:
    ./scripts/postgres-dev.sh port-forward-bg
-   ```
-
-3. Apply schema migrations (once per database, as `sigma`):
-
-   ```bash
    ./scripts/postgres-dev.sh migrate
    ```
 
-Host connection URLs (password `sigma`, with port-forward on `127.0.0.1:5432`):
+Host connection URLs (password `sigma`, port-forward on `127.0.0.1:5432`):
 
 | Service | `DATABASE_URL` |
 |---------|----------------|
@@ -83,16 +80,4 @@ Host connection URLs (password `sigma`, with port-forward on `127.0.0.1:5432`):
 | identity | `postgres://identity:sigma@127.0.0.1:5432/sigma` |
 | migrations | `postgres://sigma:sigma@127.0.0.1:5432/sigma` |
 
-In-cluster URLs use `postgres.sigma-dev.svc.cluster.local:5432` (see platform service configmaps).
-
-`init/01-keycloak-db.sql` is mirrored in platform `services/postgres` init (creates the `keycloak` database).
-
-## Used by other repos
-
-| Consumer | How |
-|----------|-----|
-| platform | StatefulSet Postgres + `scripts/postgres-dev.sh` for host port-forward |
-| identity | kind Postgres via port-forward; Keycloak uses in-cluster Postgres |
-| store / catalog / cart / contact / accounting / order | Per-service `DATABASE_URL` in kind or via port-forward |
-
-Set `SIGMA_PG_DIR` to the sigma-pg checkout when running `postgres-dev.sh migrate` from a non-standard path.
+Set `SIGMA_PG_DIR` when running `postgres-dev.sh migrate` from a non-standard checkout path.
