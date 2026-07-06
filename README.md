@@ -81,3 +81,13 @@ Host connection URLs (password `sigma`, port-forward on `127.0.0.1:5432`):
 | migrations | `postgres://sigma:sigma@127.0.0.1:5432/sigma` |
 
 Set `SIGMA_PG_DIR` when running `postgres-dev.sh migrate` from a non-standard checkout path.
+
+## Copyright & branding
+
+© Sigma Tactical Group. **All rights reserved.**
+
+The **Sigma Tactical Group** name, logos, wordmarks, and site visual identity are **proprietary**. See [sigma-theme BRANDING.md](https://github.com/sigmatactical-org/sigma-theme/blob/main/BRANDING.md).
+
+## License
+
+MIT OR Apache-2.0 for **source code** only. Branding remains proprietary.
