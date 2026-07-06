@@ -1,20 +1,20 @@
 -- Sigma application database: per-service schemas, roles, and relational tables.
 
-CREATE SCHEMA catalog;
-CREATE SCHEMA store;
-CREATE SCHEMA cart;
-CREATE SCHEMA contact;
-CREATE SCHEMA accounting;
-CREATE SCHEMA identity;
-CREATE SCHEMA "order";
+CREATE SCHEMA IF NOT EXISTS catalog;
+CREATE SCHEMA IF NOT EXISTS store;
+CREATE SCHEMA IF NOT EXISTS cart;
+CREATE SCHEMA IF NOT EXISTS contact;
+CREATE SCHEMA IF NOT EXISTS accounting;
+CREATE SCHEMA IF NOT EXISTS identity;
+CREATE SCHEMA IF NOT EXISTS "order";
 
-CREATE ROLE catalog LOGIN PASSWORD 'sigma';
-CREATE ROLE store LOGIN PASSWORD 'sigma';
-CREATE ROLE cart LOGIN PASSWORD 'sigma';
-CREATE ROLE contact LOGIN PASSWORD 'sigma';
-CREATE ROLE accounting LOGIN PASSWORD 'sigma';
-CREATE ROLE "order" LOGIN PASSWORD 'sigma';
-CREATE ROLE identity LOGIN PASSWORD 'sigma';
+DO $$ BEGIN CREATE ROLE catalog LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE ROLE store LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE ROLE cart LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE ROLE contact LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE ROLE accounting LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE ROLE "order" LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE ROLE identity LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 REVOKE CONNECT ON DATABASE sigma FROM PUBLIC;
 GRANT CONNECT ON DATABASE sigma TO sigma, catalog, store, cart, contact, accounting, "order", identity;
@@ -173,7 +173,7 @@ CREATE TABLE accounting.integrations (
 CREATE UNIQUE INDEX accounting_integrations_name_lower ON accounting.integrations (lower(name));
 
 -- identity sessions (tower-sessions)
-CREATE TABLE identity.session (
+CREATE TABLE IF NOT EXISTS identity.session (
     id TEXT PRIMARY KEY NOT NULL,
     data BYTEA NOT NULL,
     expiry_date TIMESTAMPTZ NOT NULL
