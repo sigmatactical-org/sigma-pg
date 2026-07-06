@@ -47,9 +47,11 @@ pub struct CatalogSku {
     pub updated_at: String,
 }
 
-static SKU_CACHE: OnceLock<Mutex<Option<(Instant, Vec<CatalogSku>)>>> = OnceLock::new();
+type SkuCacheEntry = Option<(Instant, Vec<CatalogSku>)>;
 
-fn cache() -> &'static Mutex<Option<(Instant, Vec<CatalogSku>)>> {
+static SKU_CACHE: OnceLock<Mutex<SkuCacheEntry>> = OnceLock::new();
+
+fn cache() -> &'static Mutex<SkuCacheEntry> {
     SKU_CACHE.get_or_init(|| Mutex::new(None))
 }
 
