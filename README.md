@@ -45,6 +45,10 @@ Each service connects with its own database role and only has access to its sche
 
 `001_sigma_init.sql` — schemas, service roles, tables, indexes, constraints, and grants.
 
+`002_keycloak_schema.sql` — `keycloak` schema in database `sigma` for the IdP (Keycloak owns the tables).
+
+PostgreSQL layout: **one application database** (`sigma`) with per-service schemas plus `keycloak` for the identity provider. Keycloak connects with `KC_DB_URL_DATABASE=sigma` and `KC_DB_SCHEMA=keycloak`.
+
 **Reset (dev only)** — drops all application schemas and re-applies the single migration:
 
 ```bash
