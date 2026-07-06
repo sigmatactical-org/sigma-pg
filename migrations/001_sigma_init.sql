@@ -39,6 +39,7 @@ CREATE TABLE catalog.sku_components (
     parent_sku_id TEXT NOT NULL REFERENCES catalog.skus (id) ON DELETE CASCADE,
     component_sku_id TEXT NOT NULL REFERENCES catalog.skus (id),
     quantity INTEGER NOT NULL CHECK (quantity >= 1),
+    CHECK (parent_sku_id <> component_sku_id),
     PRIMARY KEY (parent_sku_id, component_sku_id)
 );
 CREATE INDEX catalog_sku_components_component ON catalog.sku_components (component_sku_id);
@@ -96,6 +97,9 @@ CREATE INDEX order_orders_username ON "order".orders (username);
 CREATE INDEX order_orders_user_id ON "order".orders (user_id);
 CREATE INDEX order_orders_status ON "order".orders (status);
 CREATE INDEX order_orders_created_at ON "order".orders (created_at DESC);
+CREATE UNIQUE INDEX order_orders_cart_id_active
+    ON "order".orders (cart_id)
+    WHERE status <> 'cancelled';
 
 CREATE TABLE "order".order_lines (
     order_id TEXT NOT NULL REFERENCES "order".orders (id) ON DELETE CASCADE,
@@ -121,7 +125,11 @@ CREATE TABLE contact.contacts (
     email TEXT,
     phone TEXT,
     notes TEXT,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (
+        (source = 'identity' AND identity_id IS NOT NULL)
+        OR (source = 'external' AND identity_id IS NULL)
+    )
 );
 CREATE INDEX contact_contacts_display_name_lower ON contact.contacts (lower(display_name));
 CREATE INDEX contact_contacts_email ON contact.contacts (lower(email));
@@ -173,11 +181,12 @@ CREATE TABLE accounting.integrations (
 CREATE UNIQUE INDEX accounting_integrations_name_lower ON accounting.integrations (lower(name));
 
 -- identity sessions (tower-sessions)
-CREATE TABLE IF NOT EXISTS identity.session (
+CREATE TABLE identity.session (
     id TEXT PRIMARY KEY NOT NULL,
     data BYTEA NOT NULL,
     expiry_date TIMESTAMPTZ NOT NULL
 );
+CREATE INDEX identity_session_expiry ON identity.session (expiry_date);
 
 -- per-service schema isolation
 REVOKE ALL ON SCHEMA catalog FROM PUBLIC;

@@ -23,3 +23,7 @@ tracing = "0.1"
 [[bin]]
 name = "sigma-pg-migrate"
 path = "src/bin/migrate.rs"
+
+[[bin]]
+name = "sigma-pg-reset"
+path = "src/bin/reset.rs"

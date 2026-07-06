@@ -43,7 +43,22 @@ Each service connects with its own database role and only has access to its sche
 
 ## Migrations
 
-`001_sigma_init.sql` — schemas, service roles, tables, indexes, grants.
+`001_sigma_init.sql` — schemas, service roles, tables, indexes, constraints, and grants.
+
+**Reset (dev only)** — drops all application schemas and re-applies the single migration:
+
+```bash
+DATABASE_URL=postgres://sigma:sigma@127.0.0.1:5432/sigma cargo run --bin sigma-pg-reset
+```
+
+Or via platform:
+
+```bash
+cd platform
+./scripts/postgres-dev.sh reset
+```
+
+Use after squashing migrations or when you need a clean local database. This deletes all application data.
 
 Passwords are in the private `platform` repo (`.env.dev-seed`). After Keycloak is up, run:
 

@@ -79,6 +79,39 @@ pub async fn migrate(pool: &PgPool) -> Result<()> {
     Ok(())
 }
 
+/// Drop application schemas and sqlx migration history (dev reset).
+pub async fn reset(pool: &PgPool) -> Result<()> {
+    for schema in [
+        "catalog",
+        "store",
+        "cart",
+        "contact",
+        "accounting",
+        "identity",
+    ] {
+        let sql = format!("DROP SCHEMA IF EXISTS {schema} CASCADE");
+        sqlx::query(&sql)
+            .execute(pool)
+            .await
+            .with_context(|| format!("drop schema {schema}"))?;
+    }
+    sqlx::query(r#"DROP SCHEMA IF EXISTS "order" CASCADE"#)
+        .execute(pool)
+        .await
+        .context(r#"drop schema "order""#)?;
+    sqlx::query("DROP TABLE IF EXISTS _sqlx_migrations")
+        .execute(pool)
+        .await
+        .context("drop _sqlx_migrations")?;
+    Ok(())
+}
+
+/// Reset the database and re-apply embedded migrations.
+pub async fn reset_and_migrate(pool: &PgPool) -> Result<()> {
+    reset(pool).await?;
+    migrate(pool).await
+}
+
 /// Lightweight readiness probe for health endpoints.
 pub async fn ping(pool: &PgPool) -> Result<()> {
     sqlx::query("SELECT 1")
