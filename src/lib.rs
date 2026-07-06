@@ -7,6 +7,7 @@ use sqlx::{PgPool, postgres::PgPoolOptions};
 use tracing::debug;
 
 pub mod clients;
+pub mod health;
 
 /// Default migrator connection string when `DATABASE_URL` is unset.
 pub const DEFAULT_DATABASE_URL: &str = "postgres://sigma:sigma@127.0.0.1:5432/sigma";
@@ -89,6 +90,7 @@ pub async fn reset(pool: &PgPool) -> Result<()> {
         "accounting",
         "identity",
         "keycloak",
+        "sentry",
     ] {
         let sql = format!("DROP SCHEMA IF EXISTS {schema} CASCADE");
         sqlx::query(&sql)
