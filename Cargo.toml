@@ -8,6 +8,9 @@ authors = ["Sigma Tactical Group contributors <https://github.com/sigmatactical-
 description = "Shared PostgreSQL connection and schema migrations for Sigma services"
 publish = false
 
+# Standalone workspace root so CI can check out sigma-pg inside other repos.
+[workspace]
+
 [dependencies]
 anyhow = "1.0.70"
 sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "json", "migrate"] }
