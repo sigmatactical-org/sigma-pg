@@ -1,10 +1,12 @@
-//! Shared PostgreSQL connection helpers for Sigma web services.
+//! Shared PostgreSQL connection helpers and HTTP integration clients for Sigma web services.
 
 use std::env;
 
 use anyhow::{Context, Result};
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use tracing::debug;
+
+pub mod clients;
 
 /// Default migrator connection string when `DATABASE_URL` is unset.
 pub const DEFAULT_DATABASE_URL: &str = "postgres://sigma:sigma@127.0.0.1:5432/sigma";
@@ -21,9 +23,22 @@ pub fn database_url_from_env() -> String {
     env::var("DATABASE_URL").unwrap_or_else(|_| DEFAULT_DATABASE_URL.to_string())
 }
 
-/// Connect to PostgreSQL using `DATABASE_URL`.
+/// Connect using `DATABASE_URL` (migrator when unset).
 pub async fn connect() -> Result<PgPool> {
     connect_url(&database_url_from_env()).await
+}
+
+/// Connect as a named service role when `DATABASE_URL` is unset.
+pub async fn connect_as(role: &str) -> Result<PgPool> {
+    let url = env::var("DATABASE_URL").unwrap_or_else(|_| service_database_url(role));
+    connect_url(&url).await
+}
+
+fn max_connections() -> u32 {
+    env::var("DATABASE_MAX_CONNECTIONS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(5)
 }
 
 /// Connect to PostgreSQL using an explicit URL.
@@ -33,7 +48,7 @@ pub async fn connect() -> Result<PgPool> {
 pub async fn connect_url(database_url: &str) -> Result<PgPool> {
     debug!("Connecting to PostgreSQL");
     let pool = PgPoolOptions::new()
-        .max_connections(5)
+        .max_connections(max_connections())
         .connect(database_url)
         .await
         .with_context(|| format!("connect to PostgreSQL at {database_url}"))?;
@@ -49,8 +64,7 @@ pub fn should_auto_migrate(database_url: &str) -> bool {
     if env::var("SIGMA_PG_MIGRATE").is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true")) {
         return true;
     }
-    if env::var("SIGMA_PG_SKIP_MIGRATE").is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
-    {
+    if env::var("SIGMA_PG_SKIP_MIGRATE").is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true")) {
         return false;
     }
     connection_role(database_url) == Some("sigma")
@@ -67,12 +81,18 @@ pub async fn migrate(pool: &PgPool) -> Result<()> {
 
 /// Lightweight readiness probe for health endpoints.
 pub async fn ping(pool: &PgPool) -> Result<()> {
-    sqlx::query("SELECT 1").execute(pool).await?;
+    sqlx::query("SELECT 1")
+        .execute(pool)
+        .await
+        .context("PostgreSQL ping failed")?;
     Ok(())
 }
 
 fn connection_role(database_url: &str) -> Option<&str> {
-    let rest = database_url.strip_prefix("postgres://")?;
+    let url = database_url.trim();
+    let rest = url
+        .strip_prefix("postgres://")
+        .or_else(|| url.strip_prefix("postgresql://"))?;
     let user_pass_host = rest.split('@').next()?;
     user_pass_host.split(':').next()
 }
@@ -91,5 +111,24 @@ mod tests {
         assert!(!should_auto_migrate(
             "postgres://catalog:sigma@127.0.0.1:5432/sigma"
         ));
+    }
+
+    #[test]
+    fn postgresql_scheme_parses_role() {
+        assert_eq!(
+            connection_role("postgresql://cart:sigma@127.0.0.1:5432/sigma"),
+            Some("cart")
+        );
+    }
+
+    #[test]
+    fn skip_migrate_env_wins() {
+        unsafe {
+            env::set_var("SIGMA_PG_SKIP_MIGRATE", "1");
+        }
+        assert!(!should_auto_migrate(DEFAULT_DATABASE_URL));
+        unsafe {
+            env::remove_var("SIGMA_PG_SKIP_MIGRATE");
+        }
     }
 }
