@@ -40,10 +40,11 @@ Each service connects with its own database role and only has access to its sche
 | `contact` | `contacts` |
 | `accounting` | `bills`, `bill_line_items`, `integrations` |
 | `identity` | session tables (tower-sessions) |
+| `sentry` | `events` |
 
 ## Migrations
 
-`001_sigma_init.sql` — schemas, service roles, tables, indexes, constraints, and grants.
+`001_sigma_init.sql` — schemas, service roles, tables, indexes, constraints, and grants (including sentry).
 
 `002_keycloak_schema.sql` — `keycloak` schema in database `sigma` for the IdP (Keycloak owns the tables).
 
@@ -97,6 +98,7 @@ Host connection URLs (password `sigma`, port-forward on `127.0.0.1:5432`):
 | accounting | `postgres://accounting:sigma@127.0.0.1:5432/sigma` |
 | order | `postgres://order:sigma@127.0.0.1:5432/sigma` |
 | identity | `postgres://identity:sigma@127.0.0.1:5432/sigma` |
+| sentry | `postgres://sentry:sigma@127.0.0.1:5432/sigma` |
 | migrations | `postgres://sigma:sigma@127.0.0.1:5432/sigma` |
 
 Set `SIGMA_PG_DIR` when running `postgres-dev.sh migrate` from a non-standard checkout path.

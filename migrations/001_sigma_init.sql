@@ -6,6 +6,7 @@ CREATE SCHEMA IF NOT EXISTS cart;
 CREATE SCHEMA IF NOT EXISTS contact;
 CREATE SCHEMA IF NOT EXISTS accounting;
 CREATE SCHEMA IF NOT EXISTS identity;
+CREATE SCHEMA IF NOT EXISTS sentry;
 CREATE SCHEMA IF NOT EXISTS "order";
 
 DO $$ BEGIN CREATE ROLE catalog LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -15,9 +16,10 @@ DO $$ BEGIN CREATE ROLE contact LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate
 DO $$ BEGIN CREATE ROLE accounting LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE ROLE "order" LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE ROLE identity LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE ROLE sentry LOGIN PASSWORD 'sigma'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 REVOKE CONNECT ON DATABASE sigma FROM PUBLIC;
-GRANT CONNECT ON DATABASE sigma TO sigma, catalog, store, cart, contact, accounting, "order", identity;
+GRANT CONNECT ON DATABASE sigma TO sigma, catalog, store, cart, contact, accounting, "order", identity, sentry;
 GRANT CREATE ON DATABASE sigma TO identity;
 
 -- catalog
@@ -180,6 +182,22 @@ CREATE TABLE accounting.integrations (
 );
 CREATE UNIQUE INDEX accounting_integrations_name_lower ON accounting.integrations (lower(name));
 
+-- sentry
+CREATE TABLE sentry.events (
+    id TEXT PRIMARY KEY,
+    service TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (
+        kind IN ('status_change', 'check_failed', 'recovered', 'probe_error')
+    ),
+    previous_status TEXT,
+    current_status TEXT NOT NULL,
+    message TEXT NOT NULL,
+    detail JSONB,
+    recorded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX sentry_events_recorded_at ON sentry.events (recorded_at DESC);
+CREATE INDEX sentry_events_service ON sentry.events (service, recorded_at DESC);
+
 -- identity sessions (tower-sessions)
 CREATE TABLE identity.session (
     id TEXT PRIMARY KEY NOT NULL,
@@ -232,3 +250,9 @@ ALTER DEFAULT PRIVILEGES FOR ROLE sigma IN SCHEMA identity
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO identity;
 ALTER DEFAULT PRIVILEGES FOR ROLE identity IN SCHEMA identity
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO identity;
+
+REVOKE ALL ON SCHEMA sentry FROM PUBLIC;
+GRANT USAGE ON SCHEMA sentry TO sentry;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA sentry TO sentry;
+ALTER DEFAULT PRIVILEGES FOR ROLE sigma IN SCHEMA sentry
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO sentry;
