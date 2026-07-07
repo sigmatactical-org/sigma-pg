@@ -53,19 +53,19 @@ PostgreSQL layout: **one application database** (`sigma`) with per-service schem
 **Reset (dev only)** — drops all application schemas and re-applies the single migration:
 
 ```bash
+cd platform
+./scripts/postgres-dev.sh reset-and-seed
+```
+
+Or schema-only reset (no dev seed data):
+
+```bash
 DATABASE_URL=postgres://sigma:sigma@127.0.0.1:5432/sigma cargo run --bin sigma-pg-reset
 ```
 
-Or via platform:
+Use after squashing migrations or when you need a clean local database. This deletes all application data. Prefer `reset-and-seed` in dev so Keycloak users and the Sigma Racer product are recreated.
 
-```bash
-cd platform
-./scripts/postgres-dev.sh reset
-```
-
-Use after squashing migrations or when you need a clean local database. This deletes all application data.
-
-Passwords are in the private `platform` repo (`.env.dev-seed`). After Keycloak is up, run:
+Passwords are in the private `platform` repo (`.env.dev-seed`). When using schema-only `reset`, run:
 
 ```bash
 cd platform
