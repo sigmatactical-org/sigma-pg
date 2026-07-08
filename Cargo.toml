@@ -34,3 +34,6 @@ path = "src/bin/migrate.rs"
 [[bin]]
 name = "sigma-pg-reset"
 path = "src/bin/reset.rs"
+
+[dev-dependencies]
+temp-env = "0.3.6"
