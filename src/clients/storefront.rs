@@ -56,7 +56,9 @@ pub async fn fetch_prices(store_base_url: Option<&str>) -> Result<PriceBook, Sto
         url.push('/');
     }
     url.push_str("items");
-    let response = http::client().get(url).send().await?;
+    let response = http::with_internal_auth(http::client().get(url))
+        .send()
+        .await?;
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();

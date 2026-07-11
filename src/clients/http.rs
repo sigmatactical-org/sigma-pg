@@ -1,6 +1,8 @@
 use std::sync::OnceLock;
 
-use reqwest::Client;
+use reqwest::{Client, RequestBuilder};
+
+use super::internal;
 
 static HTTP: OnceLock<Client> = OnceLock::new();
 
@@ -13,4 +15,13 @@ pub fn client() -> &'static Client {
             .build()
             .expect("reqwest client")
     })
+}
+
+/// Attach service-to-service auth (`x-sigma-internal-token` / Bearer) when configured.
+#[must_use]
+pub fn with_internal_auth(builder: RequestBuilder) -> RequestBuilder {
+    match internal::internal_token() {
+        Some(token) => builder.header("x-sigma-internal-token", token),
+        None => builder,
+    }
 }

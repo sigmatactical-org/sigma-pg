@@ -57,7 +57,9 @@ fn cache() -> &'static Mutex<SkuCacheEntry> {
 
 async fn fetch_skus_uncached(base_url: &str) -> Result<Vec<CatalogSku>, CatalogError> {
     let url = format!("{}skus", normalize_base(base_url));
-    let response = http::client().get(url).send().await?;
+    let response = http::with_internal_auth(http::client().get(url))
+        .send()
+        .await?;
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
