@@ -91,6 +91,8 @@ pub async fn reset(pool: &PgPool) -> Result<()> {
         "identity",
         "keycloak",
         "sentry",
+        "addresses",
+        "payments",
     ] {
         let sql = format!("DROP SCHEMA IF EXISTS {schema} CASCADE");
         sqlx::query(&sql)
