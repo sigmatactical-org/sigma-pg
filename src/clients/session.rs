@@ -32,10 +32,7 @@ pub async fn fetch_identity_status(
     if identity_public_base_url.trim().is_empty() {
         return Err(SessionError::NotConfigured);
     }
-    let url = format!(
-        "{}auth/status",
-        identity_public_base_url.trim_end_matches('/')
-    );
+    let url = status_url(identity_public_base_url);
 
     let response = http::client()
         .get(url)
@@ -50,4 +47,25 @@ pub async fn fetch_identity_status(
 
     let status = response.json::<IdentityStatus>().await?;
     Ok(status.authenticated.then_some(status))
+}
+
+fn status_url(identity_base_url: &str) -> String {
+    format!("{}/auth/status", identity_base_url.trim_end_matches('/'))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn status_url_inserts_separator_regardless_of_trailing_slash() {
+        assert_eq!(
+            status_url("http://identity.sigma-dev.svc.cluster.local/"),
+            "http://identity.sigma-dev.svc.cluster.local/auth/status"
+        );
+        assert_eq!(
+            status_url("http://identity.sigma-dev.svc.cluster.local"),
+            "http://identity.sigma-dev.svc.cluster.local/auth/status"
+        );
+    }
 }

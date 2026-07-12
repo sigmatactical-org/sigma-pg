@@ -18,7 +18,7 @@ pub fn client() -> &'static Client {
 }
 
 /// Attach service-to-service auth (`x-sigma-internal-token` / Bearer) when configured.
-#[must_use]
+#[must_use = "builder does nothing until sent"]
 pub fn with_internal_auth(builder: RequestBuilder) -> RequestBuilder {
     match internal::internal_token() {
         Some(token) => builder.header("x-sigma-internal-token", token),
