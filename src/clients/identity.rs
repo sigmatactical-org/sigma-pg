@@ -1,49 +1,15 @@
-use serde::Deserialize;
-use thiserror::Error;
+mod identity_error;
+mod identity_user;
+mod issuer_parts;
+mod keycloak_user;
+mod token_response;
+pub use identity_error::IdentityError;
+pub use identity_user::IdentityUser;
+pub(crate) use issuer_parts::IssuerParts;
+pub(crate) use keycloak_user::KeycloakUser;
+pub(crate) use token_response::TokenResponse;
 
 use super::http;
-
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
-pub struct IdentityUser {
-    pub id: String,
-    pub display_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub email: Option<String>,
-}
-
-#[derive(Debug, Error)]
-pub enum IdentityError {
-    #[error("identity integration is not configured")]
-    NotConfigured,
-    #[error("invalid issuer URL: {0}")]
-    InvalidIssuer(String),
-    #[error("HTTP request failed: {0}")]
-    Http(#[from] reqwest::Error),
-    #[error("Keycloak token request failed: {0}")]
-    Token(String),
-    #[error("Keycloak user listing failed: {0}")]
-    Users(String),
-}
-
-#[derive(Deserialize)]
-struct TokenResponse {
-    access_token: String,
-}
-
-#[derive(Deserialize)]
-struct KeycloakUser {
-    id: String,
-    username: Option<String>,
-    email: Option<String>,
-    first_name: Option<String>,
-    last_name: Option<String>,
-    enabled: Option<bool>,
-}
-
-struct IssuerParts {
-    admin_base: String,
-    realm: String,
-}
 
 fn parse_issuer(issuer: &str) -> Result<IssuerParts, IdentityError> {
     let issuer = issuer.trim().trim_end_matches('/');

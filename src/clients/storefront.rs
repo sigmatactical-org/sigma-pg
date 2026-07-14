@@ -1,51 +1,13 @@
-use std::collections::HashMap;
-
-use serde::Deserialize;
-use thiserror::Error;
+mod listing;
+mod price_book;
+mod storefront_error;
+mod storefront_item;
+pub(crate) use listing::Listing;
+pub use price_book::PriceBook;
+pub use storefront_error::StorefrontError;
+pub(crate) use storefront_item::StorefrontItem;
 
 use super::http;
-
-#[derive(Debug, Error)]
-pub enum StorefrontError {
-    #[error("store integration is not configured")]
-    NotConfigured,
-    #[error("HTTP request failed: {0}")]
-    Http(#[from] reqwest::Error),
-    #[error("store request failed: {0}")]
-    Request(String),
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct Listing {
-    sku_id: String,
-    #[serde(default)]
-    price_cents: Option<u64>,
-    #[serde(default)]
-    visible: bool,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct StorefrontItem {
-    listing: Listing,
-}
-
-/// Map of catalog SKU id -> unit price in cents, for visible, priced listings.
-#[derive(Debug, Clone, Default)]
-pub struct PriceBook {
-    prices: HashMap<String, u64>,
-}
-
-impl PriceBook {
-    #[must_use]
-    pub fn unit_price_cents(&self, sku_id: &str) -> Option<u64> {
-        self.prices.get(sku_id).copied()
-    }
-
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.prices.is_empty()
-    }
-}
 
 pub async fn fetch_prices(store_base_url: Option<&str>) -> Result<PriceBook, StorefrontError> {
     let Some(base) = store_base_url.filter(|s| !s.trim().is_empty()) else {

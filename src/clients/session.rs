@@ -1,25 +1,9 @@
-use serde::Deserialize;
-use thiserror::Error;
+mod identity_status;
+mod session_error;
+pub use identity_status::IdentityStatus;
+pub use session_error::SessionError;
 
 use super::http;
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct IdentityStatus {
-    pub authenticated: bool,
-    pub username: Option<String>,
-    pub email: Option<String>,
-    pub user_id: Option<String>,
-}
-
-#[derive(Debug, Error)]
-pub enum SessionError {
-    #[error("identity BFF is not configured")]
-    NotConfigured,
-    #[error("HTTP request failed: {0}")]
-    Http(#[from] reqwest::Error),
-    #[error("identity status request failed: {0}")]
-    Request(String),
-}
 
 /// Resolve the signed-in user from the identity BFF using browser session cookies.
 pub async fn fetch_identity_status(

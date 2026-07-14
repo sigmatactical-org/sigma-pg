@@ -1,51 +1,18 @@
+mod catalog_error;
+mod catalog_sku;
+mod catalog_sku_component;
+mod catalog_sku_kind;
+pub use catalog_error::CatalogError;
+pub use catalog_sku::CatalogSku;
+pub use catalog_sku_component::CatalogSkuComponent;
+pub use catalog_sku_kind::CatalogSkuKind;
+
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
-
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use super::http;
 
 const CACHE_TTL: Duration = Duration::from_secs(30);
-
-#[derive(Debug, Error)]
-pub enum CatalogError {
-    #[error("catalog integration is not configured")]
-    NotConfigured,
-    #[error("HTTP request failed: {0}")]
-    Http(#[from] reqwest::Error),
-    #[error("catalog request failed: {0}")]
-    Request(String),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum CatalogSkuKind {
-    Simple,
-    Composite,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CatalogSkuComponent {
-    pub sku_id: String,
-    pub quantity: u32,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CatalogSku {
-    pub id: String,
-    pub sku_code: String,
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub category: Option<String>,
-    pub kind: CatalogSkuKind,
-    pub active: bool,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub components: Vec<CatalogSkuComponent>,
-    pub updated_at: String,
-}
 
 type SkuCacheEntry = Option<(Instant, Vec<CatalogSku>)>;
 

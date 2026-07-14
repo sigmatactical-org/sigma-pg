@@ -1,69 +1,19 @@
 //! Uniform JSON health reports for Sigma services.
 
+mod check;
+mod check_status;
+mod health_report;
+mod service_status;
+pub use check::Check;
+pub use check_status::CheckStatus;
+pub use health_report::HealthReport;
+pub use service_status::ServiceStatus;
+
 use std::collections::BTreeMap;
 use std::time::Instant;
 
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use chrono::Utc;
 use sqlx::PgPool;
-
-/// Result of a single dependency check.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum CheckStatus {
-    Healthy,
-    Unhealthy,
-    Unknown,
-}
-
-/// Overall service status derived from checks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[serde(rename_all = "lowercase")]
-pub enum ServiceStatus {
-    #[default]
-    Healthy,
-    Degraded,
-    Unhealthy,
-}
-
-/// One named check (for example `database`).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Check {
-    pub status: CheckStatus,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub latency_ms: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub message: Option<String>,
-}
-
-/// Standard `/health` response body.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct HealthReport {
-    pub service: String,
-    pub status: ServiceStatus,
-    pub checks: BTreeMap<String, Check>,
-    pub timestamp: DateTime<Utc>,
-}
-
-impl Check {
-    #[must_use]
-    pub fn healthy(latency_ms: Option<u64>) -> Self {
-        Self {
-            status: CheckStatus::Healthy,
-            latency_ms,
-            message: None,
-        }
-    }
-
-    #[must_use]
-    pub fn unhealthy(message: impl Into<String>) -> Self {
-        Self {
-            status: CheckStatus::Unhealthy,
-            latency_ms: None,
-            message: Some(message.into()),
-        }
-    }
-}
 
 /// Ping PostgreSQL and return a `database` check.
 pub async fn check_database(pool: &PgPool) -> Check {
