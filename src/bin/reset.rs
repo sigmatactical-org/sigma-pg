@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let url = std::env::var("DATABASE_URL")

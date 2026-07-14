@@ -1,5 +1,7 @@
 //! Shared PostgreSQL connection helpers and HTTP integration clients for Sigma web services.
 
+#![deny(unsafe_code)]
+
 use std::env;
 
 use anyhow::{Context, Result};
@@ -162,12 +164,8 @@ mod tests {
 
     #[test]
     fn skip_migrate_env_wins() {
-        unsafe {
-            env::set_var("SIGMA_PG_SKIP_MIGRATE", "1");
-        }
-        assert!(!should_auto_migrate(DEFAULT_DATABASE_URL));
-        unsafe {
-            env::remove_var("SIGMA_PG_SKIP_MIGRATE");
-        }
+        temp_env::with_var("SIGMA_PG_SKIP_MIGRATE", Some("1"), || {
+            assert!(!should_auto_migrate(DEFAULT_DATABASE_URL));
+        });
     }
 }

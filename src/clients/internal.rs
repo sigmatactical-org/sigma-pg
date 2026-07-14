@@ -42,6 +42,9 @@ pub const DEV_INTERNAL_TOKEN: &str = "dev-internal-token-32chars-minimum!!";
 pub const TEST_INTERNAL_TOKEN: &str = DEV_INTERNAL_TOKEN;
 
 /// Set [`TEST_INTERNAL_TOKEN`] when unset (CI uses `--test-threads=1`).
+// The one allowed unsafe in this crate: Rust 2024 makes process-global
+// env mutation unsafe; this fixture runs once before any test threads.
+#[allow(unsafe_code)]
 pub fn ensure_test_internal_token() {
     use std::sync::Once;
     static INIT: Once = Once::new();
