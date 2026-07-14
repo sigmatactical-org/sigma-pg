@@ -1,5 +1,8 @@
 # sigma-pg
 
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
+[![MSRV](https://img.shields.io/badge/MSRV-1.97.0-blue.svg)](https://www.rust-lang.org)
+
 Shared PostgreSQL helpers for Sigma Tactical Group web services: connection pooling, schema migrations, and per-service relational schemas.
 
 Repository: https://github.com/sigmatactical-org/sigma-pg

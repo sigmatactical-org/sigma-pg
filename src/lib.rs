@@ -94,8 +94,9 @@ pub async fn reset(pool: &PgPool) -> Result<()> {
         "addresses",
         "payments",
     ] {
+        // Safe: schema names come from the hard-coded list above.
         let sql = format!("DROP SCHEMA IF EXISTS {schema} CASCADE");
-        sqlx::query(&sql)
+        sqlx::query(sqlx::AssertSqlSafe(sql))
             .execute(pool)
             .await
             .with_context(|| format!("drop schema {schema}"))?;
