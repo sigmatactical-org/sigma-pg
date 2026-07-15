@@ -61,6 +61,40 @@ pub async fn connect_url(database_url: &str) -> Result<PgPool> {
     Ok(pool)
 }
 
+/// True when `name` names a disposable test database (`*_test`).
+#[must_use]
+pub fn is_disposable_test_db_name(name: &str) -> bool {
+    name.ends_with("_test")
+}
+
+/// Guard for destructive test fixtures (the schema TRUNCATEs in each
+/// service's `connect_empty`). Call it before truncating anything.
+///
+/// # Panics
+///
+/// Panics unless the connected database's name ends with `_test`, or
+/// `SIGMA_TEST_DB_OK=1` explicitly marks it disposable (as CI does for its
+/// throwaway Postgres container). This exists because the dev-cluster
+/// database is reachable on the same default URL tests use, and test
+/// fixtures have wiped seeded dev data by accident.
+pub async fn assert_disposable_test_db(pool: &PgPool) {
+    if env::var("SIGMA_TEST_DB_OK").is_ok_and(|v| v == "1") {
+        return;
+    }
+    let name: String = sqlx::query_scalar("SELECT current_database()")
+        .fetch_one(pool)
+        .await
+        .expect("query current_database() for the test-db guard");
+    assert!(
+        is_disposable_test_db_name(&name),
+        "refusing to run destructive test fixtures against database {name:?}: it does not look \
+         disposable. Point DATABASE_URL at a *_test database — for local runs create one with \
+         `platform/scripts/postgres-dev.sh test-db` and use \
+         postgres://sigma:sigma@127.0.0.1:5432/sigma_test — or set SIGMA_TEST_DB_OK=1 if this \
+         database really is a throwaway."
+    );
+}
+
 /// Returns true when embedded migrations should run on connect.
 #[must_use]
 pub fn should_auto_migrate(database_url: &str) -> bool {
@@ -167,5 +201,14 @@ mod tests {
         temp_env::with_var("SIGMA_PG_SKIP_MIGRATE", Some("1"), || {
             assert!(!should_auto_migrate(DEFAULT_DATABASE_URL));
         });
+    }
+
+    #[test]
+    fn test_db_names_must_end_with_test() {
+        assert!(is_disposable_test_db_name("sigma_test"));
+        assert!(is_disposable_test_db_name("catalog_test"));
+        assert!(!is_disposable_test_db_name("sigma"));
+        assert!(!is_disposable_test_db_name("sigma_testing"));
+        assert!(!is_disposable_test_db_name("test_sigma"));
     }
 }
