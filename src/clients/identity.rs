@@ -48,11 +48,9 @@ async fn fetch_access_token(
         .send()
         .await?;
 
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        return Err(IdentityError::Token(format!("{status}: {body}")));
-    }
+    let response = http::ensure_success(response)
+        .await
+        .map_err(IdentityError::Token)?;
 
     let token: TokenResponse = response.json().await?;
     Ok(token.access_token)
@@ -100,11 +98,9 @@ pub async fn fetch_users(
         .send()
         .await?;
 
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        return Err(IdentityError::Users(format!("{status}: {body}")));
-    }
+    let response = http::ensure_success(response)
+        .await
+        .map_err(IdentityError::Users)?;
 
     let users: Vec<KeycloakUser> = response.json().await?;
     Ok(users

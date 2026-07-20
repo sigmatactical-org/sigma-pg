@@ -8,8 +8,12 @@ use anyhow::{Context, Result};
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use tracing::debug;
 
+#[cfg(feature = "warp")]
+pub mod api;
 pub mod clients;
+pub mod form;
 pub mod health;
+pub mod money;
 
 /// Default migrator connection string when `DATABASE_URL` is unset.
 pub const DEFAULT_DATABASE_URL: &str = "postgres://sigma:sigma@127.0.0.1:5432/sigma";
@@ -63,7 +67,7 @@ pub async fn connect_url(database_url: &str) -> Result<PgPool> {
 
 /// True when `name` names a disposable test database (`*_test`).
 #[must_use]
-pub fn is_disposable_test_db_name(name: &str) -> bool {
+pub(crate) fn is_disposable_test_db_name(name: &str) -> bool {
     name.ends_with("_test")
 }
 
@@ -97,7 +101,7 @@ pub async fn assert_disposable_test_db(pool: &PgPool) {
 
 /// Returns true when embedded migrations should run on connect.
 #[must_use]
-pub fn should_auto_migrate(database_url: &str) -> bool {
+pub(crate) fn should_auto_migrate(database_url: &str) -> bool {
     if env::var("SIGMA_PG_MIGRATE").is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true")) {
         return true;
     }

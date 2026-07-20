@@ -1,8 +1,8 @@
 //! [`StorefrontItem`].
 
-#[allow(unused_imports)]
-use super::*;
 use serde::Deserialize;
+
+use super::Listing;
 
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct StorefrontItem {

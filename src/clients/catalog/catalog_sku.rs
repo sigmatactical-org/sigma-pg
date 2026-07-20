@@ -1,8 +1,8 @@
 //! [`CatalogSku`].
 
-#[allow(unused_imports)]
-use super::*;
 use serde::{Deserialize, Serialize};
+
+use super::{CatalogSkuComponent, CatalogSkuKind};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CatalogSku {

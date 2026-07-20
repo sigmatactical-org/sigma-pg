@@ -1,8 +1,5 @@
 //! [`IdentityUser`].
 
-#[allow(unused_imports)]
-use super::*;
-
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct IdentityUser {
     pub id: String,

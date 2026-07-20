@@ -7,14 +7,15 @@ pub use catalog_sku::CatalogSku;
 pub use catalog_sku_component::CatalogSkuComponent;
 pub use catalog_sku_kind::CatalogSkuKind;
 
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use super::http;
 
 const CACHE_TTL: Duration = Duration::from_secs(30);
 
-type SkuCacheEntry = Option<(Instant, Vec<CatalogSku>)>;
+/// Cached SKU list keyed by the normalized base URL it was fetched from.
+type SkuCacheEntry = Option<(String, Instant, Arc<Vec<CatalogSku>>)>;
 
 static SKU_CACHE: OnceLock<Mutex<SkuCacheEntry>> = OnceLock::new();
 
@@ -23,34 +24,34 @@ fn cache() -> &'static Mutex<SkuCacheEntry> {
 }
 
 async fn fetch_skus_uncached(base_url: &str) -> Result<Vec<CatalogSku>, CatalogError> {
-    let url = format!("{}skus", normalize_base(base_url));
+    let url = format!("{base_url}skus");
     let response = http::with_internal_auth(http::client().get(url))
         .send()
         .await?;
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        return Err(CatalogError::Request(format!("{status}: {body}")));
-    }
+    let response = http::ensure_success(response)
+        .await
+        .map_err(CatalogError::Request)?;
     response.json().await.map_err(CatalogError::from)
 }
 
-/// Pull all SKUs from the catalog service (cached briefly per process).
-pub async fn fetch_skus(base_url: Option<&str>) -> Result<Vec<CatalogSku>, CatalogError> {
+/// Pull all SKUs from the catalog service (cached briefly per process,
+/// per base URL).
+pub async fn fetch_skus(base_url: Option<&str>) -> Result<Arc<Vec<CatalogSku>>, CatalogError> {
     let Some(base) = base_url.filter(|s| !s.trim().is_empty()) else {
         return Err(CatalogError::NotConfigured);
     };
-    let key = normalize_base(base);
+    let key = http::normalize_base_url(base);
     {
         let guard = cache().lock().expect("catalog cache lock");
-        if let Some((fetched_at, skus)) = guard.as_ref()
+        if let Some((cached_url, fetched_at, skus)) = guard.as_ref()
+            && *cached_url == key
             && fetched_at.elapsed() < CACHE_TTL
         {
-            return Ok(skus.clone());
+            return Ok(Arc::clone(skus));
         }
     }
-    let skus = fetch_skus_uncached(&key).await?;
-    *cache().lock().expect("catalog cache lock") = Some((Instant::now(), skus.clone()));
+    let skus = Arc::new(fetch_skus_uncached(&key).await?);
+    *cache().lock().expect("catalog cache lock") = Some((key, Instant::now(), Arc::clone(&skus)));
     Ok(skus)
 }
 
@@ -65,14 +66,6 @@ pub fn validate_sku_id(skus: &[CatalogSku], sku_id: &str) -> Result<(), CatalogE
 #[must_use]
 pub fn sku_by_id<'a>(skus: &'a [CatalogSku], id: &str) -> Option<&'a CatalogSku> {
     skus.iter().find(|s| s.id == id)
-}
-
-fn normalize_base(url: &str) -> String {
-    let mut url = url.trim().to_string();
-    if !url.ends_with('/') {
-        url.push('/');
-    }
-    url
 }
 
 #[cfg(test)]

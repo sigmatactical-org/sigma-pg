@@ -1,7 +1,5 @@
 //! [`CheckStatus`].
 
-#[allow(unused_imports)]
-use super::*;
 use serde::{Deserialize, Serialize};
 
 /// Result of a single dependency check.

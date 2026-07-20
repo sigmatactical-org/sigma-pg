@@ -1,10 +1,10 @@
 //! [`HealthReport`].
 
-#[allow(unused_imports)]
-use super::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+
+use super::{Check, ServiceStatus};
 
 /// Standard `/health` response body.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -1,10 +1,9 @@
 //! [`KeycloakUser`].
 
-#[allow(unused_imports)]
-use super::*;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct KeycloakUser {
     pub(crate) id: String,
     pub(crate) username: Option<String>,

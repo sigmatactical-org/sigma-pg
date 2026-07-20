@@ -16,7 +16,7 @@ use chrono::Utc;
 use sqlx::PgPool;
 
 /// Ping PostgreSQL and return a `database` check.
-pub async fn check_database(pool: &PgPool) -> Check {
+pub(crate) async fn check_database(pool: &PgPool) -> Check {
     let started = Instant::now();
     match super::ping(pool).await {
         Ok(()) => Check::healthy(Some(started.elapsed().as_millis() as u64)),
@@ -43,7 +43,7 @@ pub async fn build_report(service: &str, database: Option<&PgPool>) -> HealthRep
 }
 
 #[must_use]
-pub fn overall_status(checks: &BTreeMap<String, Check>) -> ServiceStatus {
+pub(crate) fn overall_status(checks: &BTreeMap<String, Check>) -> ServiceStatus {
     let mut any_unhealthy = false;
     let mut any_unknown = false;
     for check in checks.values() {

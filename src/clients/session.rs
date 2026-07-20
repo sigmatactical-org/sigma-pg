@@ -23,11 +23,9 @@ pub async fn fetch_identity_status(
         .header("cookie", cookie_header)
         .send()
         .await?;
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        return Err(SessionError::Request(format!("{status}: {body}")));
-    }
+    let response = http::ensure_success(response)
+        .await
+        .map_err(SessionError::Request)?;
 
     let status = response.json::<IdentityStatus>().await?;
     Ok(status.authenticated.then_some(status))

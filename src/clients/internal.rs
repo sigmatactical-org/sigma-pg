@@ -36,10 +36,7 @@ pub fn authorize_internal(authorization: Option<&str>, internal_header: Option<&
 }
 
 /// Dev/test fixture token (32+ chars). Also used in platform dev ConfigMaps.
-pub const DEV_INTERNAL_TOKEN: &str = "dev-internal-token-32chars-minimum!!";
-
-/// Test fixture token (same value as [`DEV_INTERNAL_TOKEN`] for local/CI tests).
-pub const TEST_INTERNAL_TOKEN: &str = DEV_INTERNAL_TOKEN;
+pub const TEST_INTERNAL_TOKEN: &str = "dev-internal-token-32chars-minimum!!";
 
 /// Set [`TEST_INTERNAL_TOKEN`] when unset (CI uses `--test-threads=1`).
 // The one allowed unsafe in this crate: Rust 2024 makes process-global

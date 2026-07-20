@@ -1,8 +1,8 @@
 //! [`Check`].
 
-#[allow(unused_imports)]
-use super::*;
 use serde::{Deserialize, Serialize};
+
+use super::CheckStatus;
 
 /// One named check (for example `database`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

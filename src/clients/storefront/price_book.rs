@@ -1,7 +1,5 @@
 //! [`PriceBook`].
 
-#[allow(unused_imports)]
-use super::*;
 use std::collections::HashMap;
 
 /// Map of catalog SKU id -> unit price in cents, for visible, priced listings.
